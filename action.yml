@@ -1,0 +1,18 @@
+name: Setup kong-harnesses
+description: Install kong-harnesses from Kong
+runs:
+  using: node24
+  main: dist/index.mjs
+inputs:
+  kong-harnesses-version:
+    description: The version of kong-harnesses to install, for example 0.13.0. The latest release when empty.
+    required: false
+  token:
+    description: >-
+      A github.com token that reads the kong-harnesses releases. On GitHub
+      Enterprise Server, set it to an empty string or a github.com token.
+    default: ${{ github.token }}
+    required: false
+outputs:
+  version:
+    description: The version of kong-harnesses that the action installed
