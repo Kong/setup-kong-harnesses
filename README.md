@@ -38,7 +38,7 @@ To install a specific version, set the `kong-harnesses-version` input:
 | Name | Description | Default |
 | --- | --- | --- |
 | `kong-harnesses-version` | The version to install, for example `0.13.0`. | The latest release |
-| `token` | The GitHub token that reads the kong-harnesses releases. | `${{ github.token }}` |
+| `token` | A github.com token that reads the kong-harnesses releases. On GitHub Enterprise Server, set it to an empty string or a github.com token. | `${{ github.token }}` |
 
 ## Outputs
 

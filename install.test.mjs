@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
-import { assetName, verifyChecksum } from "./install.mjs";
+import { assetName, parseVersion, verifyChecksum } from "./install.mjs";
+
+test("parseVersion accepts only a plain version", () => {
+  assert.equal(parseVersion(""), "");
+  assert.equal(parseVersion(" v0.13.0 "), "0.13.0");
+  assert.equal(parseVersion("1.0.0-rc.1"), "1.0.0-rc.1");
+  for (const bad of ["0.13.0/../../../../other/repo/releases/tags/v1.0.0", "0.13", "latest", "0.13.0?x=1"]) {
+    assert.throws(() => parseVersion(bad), /is not a version/, bad);
+  }
+});
 
 // Names from the kong-harnesses v0.13.0 release assets.
 test("assetName matches the release archive names", () => {

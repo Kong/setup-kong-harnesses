@@ -10,7 +10,7 @@ const ARCH = { x64: "amd64", arm64: "arm64" };
 
 export async function run() {
   const token = core.getInput("token");
-  const wanted = core.getInput("kong-harnesses-version").trim().replace(/^v/, "");
+  const wanted = parseVersion(core.getInput("kong-harnesses-version"));
   const release = await api(wanted ? `releases/tags/v${wanted}` : "releases/latest", token);
   const version = release.tag_name.replace(/^v/, "");
   core.info(`Installing kong-harnesses ${version}`);
@@ -27,6 +27,16 @@ export async function run() {
 
   core.addPath(dir);
   core.setOutput("version", version);
+}
+
+// The version goes into the API path, so anything but a plain version, such
+// as "../../other/repo", could point the download at another repository.
+export function parseVersion(input) {
+  const version = input.trim().replace(/^v/, "");
+  if (version && !/^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/.test(version)) {
+    throw new Error(`kong-harnesses-version "${input}" is not a version such as 0.13.0`);
+  }
+  return version;
 }
 
 export function assetName(version, platform, arch) {
@@ -58,10 +68,11 @@ function headers(token, accept) {
 
 async function api(path, token) {
   const res = await fetch(`${API}/${path}`, { headers: headers(token, "application/vnd.github+json") });
+  if (res.status === 404) {
+    throw new Error(`GET ${API}/${path} returned 404: the release does not exist, or the token cannot read ${REPO}`);
+  }
   if (!res.ok) {
-    throw new Error(
-      `GET ${API}/${path} returned ${res.status}: the release does not exist, or the token cannot read ${REPO}`,
-    );
+    throw new Error(`GET ${API}/${path} returned ${res.status}: ${await res.text()}`);
   }
   return res.json();
 }

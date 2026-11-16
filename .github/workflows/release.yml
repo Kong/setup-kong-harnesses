@@ -2,7 +2,9 @@ name: Publish
 
 on:
   release:
-    types: [published, edited]
+    # Not "edited": an edit to an older release would move the major tag back
+    # to that release.
+    types: [published]
 
 permissions:
   contents: read
@@ -18,11 +20,14 @@ jobs:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.release.tag_name }}
+          # The source commit of the release. The tag itself holds only the
+          # build after the first run, so a re-run could not build from it.
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          package-manager-cache: false
       - run: npm ci && npm run build
       # Pushes action.yml and dist/index.mjs to the release tag and moves the
       # major tag, for example v1, to it.
