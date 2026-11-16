@@ -48,6 +48,6 @@ To install a specific version, set the `kong-harnesses-version` input:
 
 ## Release
 
-Publish a GitHub release with a semantic version tag, for example `v1.0.0`. The Publish workflow builds `dist/index.mjs`, pushes it with `action.yml` to that tag and moves the major tag, for example `v1`, to the same commit.
+Publish a GitHub release with a semantic version tag, for example `v1.0.0`. The Publish workflow builds `dist/index.mjs`, pushes it with `action.yml` to that tag and moves the major and minor tags, for example `v1` and `v1.0`, to the same commit.
 
-The major tag goes to the release of the last Publish run, also when that release is older. Thus publish only a release that is newer than all others with the same major version, publish it as a full release and not as a prerelease that you promote later, and re-run only the Publish run of the newest release.
+These tags go to the release of the last Publish run, also when that release is older. Thus publish only a release that is newer than all others with the same major version, publish it as a full release and not as a prerelease that you promote later, and re-run only the Publish run of the newest release.
