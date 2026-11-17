@@ -14,7 +14,7 @@ On Linux, kong-harnesses keeps its profile lock in `XDG_RUNTIME_DIR`, which a ho
 
 ## Sample workflow
 
-A CI job has no person to sign in, so it uses a key that the Kong AI Gateway administrator issues. Commit a profile with `"sign_in": "environment_key"`, and keep the key in a repository secret. kong-harnesses reads the key from `KONG_HARNESSES_STATIC_KEY` each time Claude Code asks for a credential, so set the variable on the step that runs Claude Code. The kong-harnesses [operations guide](https://github.com/Kong/kong-harnesses/blob/main/docs/operations.md#environment-key-for-ci) describes the profile and the gateway setup.
+A CI job has no person to sign in, so it uses a key that the Kong AI Gateway administrator issues. Commit a profile with `"sign_in": "environment_key"`, and keep the key in a repository secret. kong-harnesses reads the key from `KONG_HARNESSES_STATIC_KEY` each time Claude Code asks for a credential, so set the variable on the step that runs Claude Code. Set it on the `profile activate` step too, which reads the gateway model list with the key. The kong-harnesses [operations guide](https://github.com/Kong/kong-harnesses/blob/main/docs/operations.md#environment-key-for-ci) describes the profile and the gateway setup.
 
 ```yaml
 on:
@@ -28,6 +28,8 @@ jobs:
       - run: npm install --global @anthropic-ai/claude-code
       - run: kong-harnesses profile import --auto-approve .github/kong-ci-profile.json
       - run: kong-harnesses profile activate ci --client claude-code --auto-approve
+        env:
+          KONG_HARNESSES_STATIC_KEY: ${{ secrets.KONG_AI_GATEWAY_KEY }}
       - run: claude -p "Review the change in this pull request"
         env:
           KONG_HARNESSES_STATIC_KEY: ${{ secrets.KONG_AI_GATEWAY_KEY }}
