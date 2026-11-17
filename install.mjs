@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { isAbsolute, join } from "node:path";
 import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
 
@@ -27,6 +29,21 @@ export async function run() {
 
   core.addPath(dir);
   core.setOutput("version", version);
+
+  const runtime = await runtimeDir(process.env, process.platform, process.env.RUNNER_TEMP || tmpdir());
+  if (runtime) {
+    core.exportVariable("XDG_RUNTIME_DIR", runtime);
+  }
+}
+
+// On Linux, kong-harnesses takes its profile lock in XDG_RUNTIME_DIR, which a
+// desktop sign-in creates and a hosted runner does not have. mkdtemp creates
+// the directory with mode 0700, which the lock requires.
+export async function runtimeDir(env, platform, parent) {
+  if (platform !== "linux" || isAbsolute(env.XDG_RUNTIME_DIR ?? "")) {
+    return "";
+  }
+  return mkdtemp(join(parent, "kong-harnesses-runtime-"));
 }
 
 // The version goes into the API path, so anything but a plain version, such

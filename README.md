@@ -10,19 +10,29 @@ Add this step to install the latest release of `kong-harnesses`:
 
 The action runs on Linux, macOS and Windows runners, on x64 and arm64. It checks the downloaded archive against the `SHA256SUMS.txt` file of the release and stops on a mismatch.
 
+On Linux, kong-harnesses keeps its profile lock in `XDG_RUNTIME_DIR`, which a hosted runner does not set. When the variable is unset, the action creates a private directory in the runner's temporary directory and sets `XDG_RUNTIME_DIR` to it for the later steps of the job.
+
 ## Sample workflow
+
+A CI job has no person to sign in, so it uses a key that the Kong AI Gateway administrator issues. Commit a profile with `"sign_in": "environment_key"`, and keep the key in a repository secret. kong-harnesses reads the key from `KONG_HARNESSES_STATIC_KEY` each time Claude Code asks for a credential, so set the variable on the step that runs Claude Code. Set it on the `profile activate` step too, which reads the gateway model list with the key. The kong-harnesses [operations guide](https://github.com/Kong/kong-harnesses/blob/main/docs/operations.md#environment-key-for-ci) describes the profile and the gateway setup.
 
 ```yaml
 on:
-  push:
-    branches:
-      - main
+  pull_request:
 jobs:
-  test:
+  review:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
       - uses: kong/setup-kong-harnesses@v1
-      - run: kong-harnesses --help
+      - run: npm install --global @anthropic-ai/claude-code
+      - run: kong-harnesses profile import --auto-approve .github/kong-ci-profile.json
+      - run: kong-harnesses profile activate ci --client claude-code --auto-approve
+        env:
+          KONG_HARNESSES_STATIC_KEY: ${{ secrets.KONG_AI_GATEWAY_KEY }}
+      - run: claude -p "Review the change in this pull request"
+        env:
+          KONG_HARNESSES_STATIC_KEY: ${{ secrets.KONG_AI_GATEWAY_KEY }}
 ```
 
 To install a specific version, set the `kong-harnesses-version` input:
