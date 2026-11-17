@@ -59,3 +59,5 @@ jobs:
           INSTALLED: ${{ steps.setup.outputs.version }}
           WANTED: ${{ matrix.version }}
         run: test "$INSTALLED" = "$WANTED"
+      - if: runner.os == 'Linux'
+        run: test "$(stat -c %a "$XDG_RUNTIME_DIR")" = 700

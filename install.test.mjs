@@ -1,7 +1,24 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
-import { assetName, parseVersion, verifyChecksum } from "./install.mjs";
+import { assetName, parseVersion, runtimeDir, verifyChecksum } from "./install.mjs";
+
+test("runtimeDir creates a private directory only on Linux without one", async (t) => {
+  const parent = await mkdtemp(join(tmpdir(), "runtime-test-"));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+
+  for (const env of [{}, { XDG_RUNTIME_DIR: "" }, { XDG_RUNTIME_DIR: "relative/dir" }]) {
+    const dir = await runtimeDir(env, "linux", parent);
+    assert.ok(dir.startsWith(parent), JSON.stringify(env));
+    assert.equal((await stat(dir)).mode & 0o777, 0o700, JSON.stringify(env));
+  }
+  assert.equal(await runtimeDir({ XDG_RUNTIME_DIR: "/run/user/1001" }, "linux", parent), "");
+  assert.equal(await runtimeDir({}, "darwin", parent), "");
+  assert.equal(await runtimeDir({}, "win32", parent), "");
+});
 
 test("parseVersion accepts only a plain version", () => {
   assert.equal(parseVersion(""), "");
