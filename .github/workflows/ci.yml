@@ -27,14 +27,11 @@ jobs:
       - run: npm run build
 
   install:
-    # The workflow token reads the kong-harnesses releases only when they are
-    # public, so this job waits for the public release.
-    if: github.event.repository.visibility == 'public'
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest, windows-11-arm]
-        version: ['', '0.13.0']
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel, windows-latest, windows-11-arm]
+        version: ['', '0.21.0']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
@@ -52,6 +49,7 @@ jobs:
         id: setup
         with:
           kong-harnesses-version: ${{ matrix.version }}
+          token: ''
       - run: kong-harnesses --help
       - if: matrix.version != ''
         shell: bash
