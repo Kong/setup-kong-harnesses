@@ -5,12 +5,12 @@ runs:
   main: dist/index.mjs
 inputs:
   kong-harnesses-version:
-    description: The version of kong-harnesses to install, for example 0.13.0. The latest release when empty.
+    description: The version of kong-harnesses to install, for example 0.21.0. The latest release when empty.
     required: false
   token:
     description: >-
-      A github.com token that reads the kong-harnesses releases. On GitHub
-      Enterprise Server, set it to an empty string or a github.com token.
+      Optional github.com token with read access to Kong/kong-harnesses for
+      pinned versions absent from the public Cloudsmith repository.
     default: ${{ github.token }}
     required: false
 outputs:

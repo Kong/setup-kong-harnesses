@@ -4,7 +4,7 @@ import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { assetName, parseVersion, runtimeDir, verifyChecksum } from "./install.mjs";
+import { assetName, parseVersion, resolveRelease, runtimeDir, verifyChecksum } from "./install.mjs";
 
 test("runtimeDir creates a private directory only on Linux without one", async (t) => {
   const parent = await mkdtemp(join(tmpdir(), "runtime-test-"));
@@ -44,6 +44,43 @@ test("verifyChecksum accepts only the listed SHA-256", () => {
   const sums = `${"0".repeat(64)}  kong-harnesses_v0.13.0_linux_amd64.deb\n${sum}  ${name}\n`;
 
   verifyChecksum(data, sums, name);
+  assert.throws(() => verifyChecksum(data, sums + sums, name), /duplicate entries/);
   assert.throws(() => verifyChecksum(Buffer.from("tampered"), sums, name), /SHA256SUMS.txt says/);
   assert.throws(() => verifyChecksum(data, sums, "kong-harnesses_v0.13.0_linux_arm64.tar.gz"), /no entry/);
+});
+
+test("latest uses the highest stable release with a published bundle across all pages", async (t) => {
+  const bundle = (version, downloadable = true) => ({
+    filename: `kong-harnesses_v${version}.sigstore.json`, version, is_downloadable: downloadable,
+  });
+  const pages = [
+    [bundle("0.9.0"), bundle("1.0.0-rc.1"), bundle("1.0.0", false)],
+    [bundle("0.10.0")],
+  ];
+  t.mock.method(globalThis, "fetch", (url, opts) => {
+    assert.equal(url.hostname, "api.cloudsmith.io");
+    assert.equal(opts?.headers?.Authorization, undefined);
+    assert.equal(url.searchParams.get("query"), "name:^kong-harnesses-sigstore-json$");
+    const page = Number(url.searchParams.get("page"));
+    return Response.json(pages[page - 1], { headers: { "x-pagination-pagetotal": String(pages.length) } });
+  });
+  assert.equal((await resolveRelease("", "github-token")).version, "0.10.0");
+});
+
+test("only an authenticated historical pin falls back to the GitHub release", async (t) => {
+  let githubCalls = 0;
+  t.mock.method(globalThis, "fetch", (url, opts) => {
+    if (new URL(url).hostname === "api.cloudsmith.io") {
+      assert.equal(url.searchParams.get("query"), "name:^kong-harnesses-sigstore-json$ version:^0.13.0$");
+      assert.equal(opts?.headers?.Authorization, undefined);
+      return Response.json([]);
+    }
+    assert.equal(String(url), "https://api.github.com/repos/Kong/kong-harnesses/releases/tags/v0.13.0");
+    assert.equal(opts.headers.Authorization, "Bearer github-token");
+    githubCalls++;
+    return Response.json({ tag_name: "v0.13.0", assets: [] });
+  });
+  await assert.rejects(resolveRelease("0.13.0", ""), /No public kong-harnesses release/);
+  assert.equal((await resolveRelease("0.13.0", "github-token")).version, "0.13.0");
+  assert.equal(githubCalls, 1);
 });

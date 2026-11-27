@@ -1,6 +1,6 @@
 # setup-kong-harnesses
 
-Install [kong-harnesses](https://github.com/Kong/kong-harnesses) so that it can be used in your GitHub Actions workflows.
+Install kong-harnesses in a GitHub Actions workflow from [Kong's public package repository](https://cloudsmith.io/~kong/repos/kong-harnesses/packages/). Public releases require no token.
 
 Add this step to install the latest release of `kong-harnesses`:
 
@@ -14,7 +14,7 @@ On Linux, kong-harnesses keeps its profile lock in `XDG_RUNTIME_DIR`, which a ho
 
 ## Sample workflow
 
-A CI job has no person to sign in, so it uses a key that the Kong AI Gateway administrator issues. Commit a profile with `"sign_in": "environment_key"`, and keep the key in a repository secret. kong-harnesses reads the key from `KONG_HARNESSES_STATIC_KEY` each time Claude Code asks for a credential, so set the variable on the step that runs Claude Code. Set it on the `profile activate` step too, which reads the gateway model list with the key. The kong-harnesses [operations guide](https://github.com/Kong/kong-harnesses/blob/main/docs/operations.md#environment-key-for-ci) describes the profile and the gateway setup.
+A CI job has no person to sign in, so it uses a key that the Kong AI Gateway administrator issues. Commit a profile with `"sign_in": "environment_key"`, and keep the key in a repository secret. kong-harnesses reads the key from `KONG_HARNESSES_STATIC_KEY` each time Claude Code asks for a credential, so set the variable on the step that runs Claude Code. Set it on the `profile activate` step too, which reads the gateway model list with the key.
 
 ```yaml
 on:
@@ -40,21 +40,21 @@ To install a specific version, set the `kong-harnesses-version` input:
 ```yaml
 - uses: kong/setup-kong-harnesses@v1
   with:
-    kong-harnesses-version: 0.13.0
+    kong-harnesses-version: 0.21.0
 ```
 
 ## Inputs
 
 | Name | Description | Default |
 | --- | --- | --- |
-| `kong-harnesses-version` | The version to install, for example `0.13.0`. | The latest release |
-| `token` | A github.com token that reads the kong-harnesses releases. On GitHub Enterprise Server, set it to an empty string or a github.com token. | `${{ github.token }}` |
+| `kong-harnesses-version` | The version to install, for example `0.21.0`. | The latest release |
+| `token` | Optional github.com token with read access to `Kong/kong-harnesses` for pinned versions absent from Cloudsmith. | `${{ github.token }}` |
 
 ## Outputs
 
 | Name | Description |
 | --- | --- |
-| `version` | The version that the action installed, for example `0.13.0`. |
+| `version` | The version that the action installed, for example `0.21.0`. |
 
 ## Release
 
